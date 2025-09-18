@@ -26,19 +26,19 @@ app.post("/rec/hash",async(req,res)=>{
         
 
         if (!hash){
-            res.status(404).json({"message":"No Hash Found"})
+            return res.status(404).json({"message":"No Hash Found"})
         }
 
         
         const {department_signature:deptSign  , institution_signature : instSign} = hash
         
         console.log("hash sent")
-        res.status(200).json({"message":"hash sent successfully","deptSign":deptSign,"instSign":instSign})
+        return res.status(200).json({"message":"hash sent successfully","deptSign":deptSign,"instSign":instSign})
 
     } catch (error) {
 
         console.log(error)
-        res.status(500).json({"message":"DB Error"})
+        return res.status(500).json({"message":"DB Error"})
 
     }
 })
