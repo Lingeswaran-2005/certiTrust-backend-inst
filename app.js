@@ -21,7 +21,7 @@ async function getHashAndSign(tableName , code) {
 app.post("/rec/hash",async(req,res)=>{
     const data = req.body
     try {
-        
+        console.log("server 2 running")
         const hash = await getHashAndSign(data["deptTableName"],data["short_code"])
         
 
@@ -32,7 +32,7 @@ app.post("/rec/hash",async(req,res)=>{
         
         const {department_signature:deptSign  , institution_signature : instSign} = hash
         
-
+        console.log("hash sent")
         res.status(200).json({"message":"hash sent successfully","deptSign":deptSign,"instSign":instSign})
 
     } catch (error) {
