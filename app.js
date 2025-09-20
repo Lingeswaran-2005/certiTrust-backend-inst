@@ -21,8 +21,45 @@ async function getHashAndSign(tableName , code) {
 function generateSignature(data,privateKey){
     const hash = crypto.createHash("sha256").update(data).digest()
     const sign = crypto.createSign("sha256").update(hash).sign(privateKey , "base64")
-    return(sign)
+    const hashHex = hash.toString("hex")
+    return({"hash":hashHex, sign})
 }
+
+function storeDeptSign(data){
+    let n=3
+    data.forEach(async(i)=>{
+        try{
+            const result = await pool.query(
+                `INSERT INTO cse_hash_table (short_code, hash, department_signature)
+                VALUES ($1, $2, $3)
+                RETURNING *`,
+                [`shortCode${n++}`, i.hash, i.sign]
+            );
+        }
+        catch(err){
+            console.log(err.message)
+        }
+    })
+}
+
+function storeInstSign(data){
+    let n=3
+    data.forEach(async(i)=>{
+        try{
+            const result = await pool.query(
+                `UPDATE cse_hash_table
+                SET institution_signature = $1
+                WHERE hash = $2
+                RETURNING *`,
+                [i.sign, i.hash]
+                );
+        }
+        catch(err){
+            console.log(err.message)
+        }
+    })
+}
+
 
 // Routing
 
@@ -51,15 +88,18 @@ app.post("/rec/hash",async(req,res)=>{
     }
 })
 
+
+
 app.post("/api/dept/hash",(req,res)=>{
     try{
         const {data}  = req.body
         const rawData = data.map(i=>{
-            return `${i["name"]}|${i["dept"]}|${i["issuedate"]}`
+            return `${i["institution_name"]}|${i["department"]}|${i["student_name"]}|${i["issue_date"]}}`
         })
         
         let deptSignatures = rawData.map(i=> generateSignature(i,process.env.DEPT_PRIVATE_KEY))
         console.log(deptSignatures)
+        storeDeptSign(deptSignatures)
         return res.status(200).json({message:"Department signature successfull"})
     }
     catch(err){
@@ -72,12 +112,15 @@ app.post("/api/dept/hash",(req,res)=>{
 app.post("/api/inst/hash",(req,res)=>{
     try{
         const {data}  = req.body
+        console.log(data)
         const rawData = data.map(i=>{
-            return `${i["name"]}|${i["dept"]}|${i["issuedate"]}`
+            return `${i["institution_name"]}|${i["department"]}|${i["student_name"]}|${i["issue_date"]}}`
+
         })
         
-        let deptSignatures = rawData.map(i=> generateSignature(i,process.env.INST_PRIVATE_KEY))
-        console.log(deptSignatures)
+        let instSignatures = rawData.map(i=> generateSignature(i,process.env.INST_PRIVATE_KEY))
+        console.log(instSignatures)
+        storeInstSign(instSignatures)
         return res.status(200).json({message:"Institution signature successfull"})
     }
     catch(err){
